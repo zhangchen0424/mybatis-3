@@ -35,4 +35,8 @@ public class PrimitiveSubject {
     this.active = active;
     this.dt = dt;
   }
+
+  public  String toString() {
+    return "id: " + id + ", name: " + name + ", age: " + age + ", height: " + height + ", weight: " + weight + ", active: " + active + ", dt: " + dt;
+  }
 }
