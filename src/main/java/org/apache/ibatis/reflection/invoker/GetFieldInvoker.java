@@ -23,6 +23,9 @@ import org.apache.ibatis.reflection.Reflector;
  * @author Clinton Begin
  */
 public class GetFieldInvoker implements Invoker {
+    /**
+     * Field 对象
+     */
   private final Field field;
 
   public GetFieldInvoker(Field field) {
@@ -32,6 +35,8 @@ public class GetFieldInvoker implements Invoker {
   @Override
   public Object invoke(Object target, Object[] args) throws IllegalAccessException {
     try {
+        //通过反射获取对象字段值。首先尝试直接访问字段，若因权限异常失败，
+        // 则检查是否允许压制访问检查（canControlMemberAccessible），若允许则设置字段可访问后重新获取值，否则抛出异常。
       return field.get(target);
     } catch (IllegalAccessException e) {
       if (Reflector.canControlMemberAccessible()) {

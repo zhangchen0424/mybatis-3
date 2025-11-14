@@ -71,6 +71,11 @@ public class PropertyParser {
       return (variables == null) ? defaultValue : variables.getProperty(key, defaultValue);
     }
 
+      /**
+       * variables 在获取属性值时，会先判断是否包含该属性，如果包含则返回属性值，否则返回 ${content}
+       * @param content
+       * @return
+       */
     @Override
     public String handleToken(String content) {
       if (variables != null) {

@@ -58,6 +58,12 @@ public class ReflectorTest {
 
     private Long id;
 
+    private String name;
+
+    public String getName() {
+      return name;
+    }
+
     @Override
     public Long getId() {
       return id;
@@ -70,6 +76,9 @@ public class ReflectorTest {
   }
 
   static class Section extends AbstractEntity implements Entity<Long> {
+      public Integer getName(String a) {
+          return null;
+      }
   }
 
   @Test
