@@ -42,20 +42,27 @@ public class BeanWrapper extends BaseWrapper {
 
   @Override
   public Object get(PropertyTokenizer prop) {
+      // <1> 获得集合类型的属性的指定位置的值
     if (prop.getIndex() != null) {
+        // 获得集合类型的属性
       Object collection = resolveCollection(prop, object);
+        // 获得指定位置的值
       return getCollectionValue(prop, collection);
     } else {
+        // <2> 获得属性的值
       return getBeanProperty(prop, object);
     }
   }
 
   @Override
   public void set(PropertyTokenizer prop, Object value) {
+      // 设置集合类型的属性的指定位置的值
     if (prop.getIndex() != null) {
+        // 获得集合类型的属性
       Object collection = resolveCollection(prop, object);
       setCollectionValue(prop, collection, value);
     } else {
+        // 设置属性的值
       setBeanProperty(prop, object, value);
     }
   }
@@ -77,27 +84,42 @@ public class BeanWrapper extends BaseWrapper {
 
   @Override
   public Class<?> getSetterType(String name) {
+      // 创建 PropertyTokenizer 对象，对 name 进行分词
     PropertyTokenizer prop = new PropertyTokenizer(name);
+      // 有子表达式
     if (prop.hasNext()) {
+        // <1> 创建 MetaObject 对象
       MetaObject metaValue = metaObject.metaObjectForProperty(prop.getIndexedName());
+        // 如果 metaValue 为空，则基于 metaClass 获得返回类型
       if (metaValue == SystemMetaObject.NULL_META_OBJECT) {
         return metaClass.getSetterType(name);
+          // 如果 metaValue 非空，则基于 metaValue 获得返回类型。
+          // 例如：richType.richMap.nihao ，其中 richMap 是 Map 类型，而 nihao 的类型，需要获得到 nihao 的具体值，才能做真正的判断。
       } else {
+          // 递归判断子表达式 children ，获得返回值的类型
         return metaValue.getSetterType(prop.getChildren());
       }
+        // 有子表达式
     } else {
+        // 直接获得返回值的类型
       return metaClass.getSetterType(name);
     }
   }
 
   @Override
   public Class<?> getGetterType(String name) {
+      // 创建 PropertyTokenizer 对象，对 name 进行分词
     PropertyTokenizer prop = new PropertyTokenizer(name);
+      // 有子表达式
     if (prop.hasNext()) {
+        // <1> 创建 MetaObject 对象
       MetaObject metaValue = metaObject.metaObjectForProperty(prop.getIndexedName());
+        // 如果 metaValue 为空，则基于 metaClass 获得返回类型
       if (metaValue == SystemMetaObject.NULL_META_OBJECT) {
         return metaClass.getGetterType(name);
       } else {
+          // 如果 metaValue 非空，则基于 metaValue 获得返回类型。
+          // 例如：richType.richMap.nihao ，其中 richMap 是 Map 类型，而 nihao 的类型，需要获得到 nihao 的具体值，才能做真正的判断
         return metaValue.getGetterType(prop.getChildren());
       }
     } else {
