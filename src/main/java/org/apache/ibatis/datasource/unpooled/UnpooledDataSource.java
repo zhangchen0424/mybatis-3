@@ -36,20 +36,57 @@ import org.apache.ibatis.io.Resources;
  * @author Eduardo Macarron
  */
 public class UnpooledDataSource implements DataSource {
-
+    /**
+     * Driver 类加载器
+     */
   private ClassLoader driverClassLoader;
+
+    /**
+     * Driver 属性
+     */
   private Properties driverProperties;
+
+    // UnpooledDataSource.java
+
+    /**
+     * 已注册的 Driver 映射
+     *
+     * KEY：Driver 类名
+     * VALUE：Driver 对象
+     */
   private static Map<String, Driver> registeredDrivers = new ConcurrentHashMap<>();
 
+    /**
+     * Driver 类名
+     */
   private String driver;
+
+    /**
+     * 数据库 URL
+     */
   private String url;
+
+    /**
+     * 数据库用户名
+     */
   private String username;
+
+    /**
+     * 数据库密码
+     */
   private String password;
 
+    /**
+     * 是否自动提交事务
+     */
   private Boolean autoCommit;
+    /**
+     * 默认事务隔离级别
+     */
   private Integer defaultTransactionIsolationLevel;
 
   static {
+      // 初始化 registeredDrivers
     Enumeration<Driver> drivers = DriverManager.getDrivers();
     while (drivers.hasMoreElements()) {
       Driver driver = drivers.nextElement();
@@ -185,6 +222,7 @@ public class UnpooledDataSource implements DataSource {
   private Connection doGetConnection(String username, String password) throws SQLException {
     Properties props = new Properties();
     if (driverProperties != null) {
+        //设置driver属性
       props.putAll(driverProperties);
     }
     if (username != null) {
@@ -196,13 +234,22 @@ public class UnpooledDataSource implements DataSource {
     return doGetConnection(props);
   }
 
+    /**
+     * 就到了自己手写jdbc获取连接的过程
+     */
   private Connection doGetConnection(Properties properties) throws SQLException {
+      // <1> 初始化 Driver
     initializeDriver();
+      // <2> 获得连接 Connection 对象
     Connection connection = DriverManager.getConnection(url, properties);
+      // <3> 配置 Connection 对象
     configureConnection(connection);
     return connection;
   }
 
+    /**
+     * 初始化driver，没啥看头
+     */
   private synchronized void initializeDriver() throws SQLException {
     if (!registeredDrivers.containsKey(driver)) {
       Class<?> driverType;
@@ -215,6 +262,7 @@ public class UnpooledDataSource implements DataSource {
         // DriverManager requires the driver to be loaded via the system ClassLoader.
         // http://www.kfu.com/~nsayer/Java/dyn-jdbc.html
         Driver driverInstance = (Driver)driverType.newInstance();
+        //代理是为了使用mybatis自定义的logger
         DriverManager.registerDriver(new DriverProxy(driverInstance));
         registeredDrivers.put(driver, driverInstance);
       } catch (Exception e) {
