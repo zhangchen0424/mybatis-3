@@ -143,17 +143,23 @@ public class MetaObject {
   }
 
   public void setValue(String name, Object value) {
+      // 创建 PropertyTokenizer 对象，对 name 分词
     PropertyTokenizer prop = new PropertyTokenizer(name);
+      // 有子表达式
     if (prop.hasNext()) {
+        // 创建 MetaObject 对象
       MetaObject metaValue = metaObjectForProperty(prop.getIndexedName());
+        // 递归判断子表达式 children ，设置值
       if (metaValue == SystemMetaObject.NULL_META_OBJECT) {
         if (value == null) {
           // don't instantiate child path if value is null
           return;
         } else {
+            // <1> 创建值
           metaValue = objectWrapper.instantiatePropertyValue(name, prop, objectFactory);
         }
       }
+        // 设置值
       metaValue.setValue(prop.getChildren(), value);
     } else {
       objectWrapper.set(prop, value);
