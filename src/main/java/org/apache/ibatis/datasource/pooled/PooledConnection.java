@@ -24,21 +24,53 @@ import java.sql.SQLException;
 import org.apache.ibatis.reflection.ExceptionUtil;
 
 /**
+ * 实现 InvocationHandler 接口，池化的 Connection 对象。
  * @author Clinton Begin
  */
 class PooledConnection implements InvocationHandler {
-
+    /**
+     * 关闭 Connection 方法名
+     */
   private static final String CLOSE = "close";
+    /**
+     * JDK Proxy 的接口
+     */
   private static final Class<?>[] IFACES = new Class<?>[] { Connection.class };
-
+    /**
+     * 对象的标识，基于 {@link #realConnection} 求 hashCode
+     */
   private final int hashCode;
+    /**
+     * 所属的 PooledDataSource 对象
+     */
   private final PooledDataSource dataSource;
+    /**
+     * 真实的 Connection 连接
+     */
   private final Connection realConnection;
+    /**
+     * 代理的 Connection 连接，即 {@link PooledConnection} 这个动态代理的 Connection 对象
+     */
   private final Connection proxyConnection;
+    /**
+     * 从连接池中，获取走的时间戳
+     */
   private long checkoutTimestamp;
+    /**
+     * 对象创建时间
+     */
   private long createdTimestamp;
+    /**
+     * 最后更新时间
+     */
   private long lastUsedTimestamp;
+    /**
+     * 连接的标识，即 {@link PooledDataSource#expectedConnectionTypeCode}
+     */
   private int connectionTypeCode;
+    /**
+     * 是否有效
+     */
   private boolean valid;
 
   /**
@@ -66,10 +98,11 @@ class PooledConnection implements InvocationHandler {
 
   /**
    * Method to see if the connection is usable
-   *
+   *校验连接是否可用
    * @return True if the connection is usable
    */
   public boolean isValid() {
+      //当连接有效时，调用 PooledDataSource#pingConnection(PooledConnection conn) 方法，向数据库发起 “ping” 请求，判断连接是否真正有效。
     return valid && realConnection != null && dataSource.pingConnection(this);
   }
 
@@ -231,17 +264,21 @@ class PooledConnection implements InvocationHandler {
    */
   @Override
   public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+      // <1>判断调用的方法是不是 Connection#close() 方法，如果是，
+      // 则调用 PooledDataSource#pushConnection(PooledConnection conn) 方法，将该连接放回到连接池中，从而避免连接被关闭。
     String methodName = method.getName();
     if (CLOSE.hashCode() == methodName.hashCode() && CLOSE.equals(methodName)) {
       dataSource.pushConnection(this);
       return null;
     }
     try {
+        // <2.1> 判断非 Object 的方法，则额外调用 #checkConnection() 方法，则先检查连接是否可用
       if (!Object.class.equals(method.getDeclaringClass())) {
         // issue #579 toString() should never fail
         // throw an SQLException instead of a Runtime
         checkConnection();
       }
+        // <2.2> 反射调用对应的方法
       return method.invoke(realConnection, args);
     } catch (Throwable t) {
       throw ExceptionUtil.unwrapThrowable(t);
