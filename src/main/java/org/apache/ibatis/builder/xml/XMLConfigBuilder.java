@@ -51,10 +51,22 @@ import org.apache.ibatis.type.JdbcType;
  * @author Kazuki Shimizu
  */
 public class XMLConfigBuilder extends BaseBuilder {
-
+    /**
+     * 是否已解析
+     */
   private boolean parsed;
+    /**
+     * 基于 Java XPath 解析器
+     */
   private final XPathParser parser;
+    /**
+     * 环境
+     */
   private String environment;
+
+    /**
+     * ReflectorFactory 对象
+     */
   private final ReflectorFactory localReflectorFactory = new DefaultReflectorFactory();
 
   public XMLConfigBuilder(Reader reader) {
@@ -82,8 +94,10 @@ public class XMLConfigBuilder extends BaseBuilder {
   }
 
   private XMLConfigBuilder(XPathParser parser, String environment, Properties props) {
+      // <1> 创建 Configuration 对象
     super(new Configuration());
     ErrorContext.instance().resource("SQL Mapper Configuration");
+      // <2> 设置 Configuration 的 variables 属性
     this.configuration.setVariables(props);
     this.parsed = false;
     this.environment = environment;
@@ -91,10 +105,13 @@ public class XMLConfigBuilder extends BaseBuilder {
   }
 
   public Configuration parse() {
+      // <1.1> 若已解析，抛出 BuilderException 异常
     if (parsed) {
       throw new BuilderException("Each XMLConfigBuilder can only be used once.");
     }
+      // <1.2> 标记已解析
     parsed = true;
+      // <2> 解析 XML configuration 节点
     parseConfiguration(parser.evalNode("/configuration"));
     return configuration;
   }
@@ -102,20 +119,33 @@ public class XMLConfigBuilder extends BaseBuilder {
   private void parseConfiguration(XNode root) {
     try {
       //issue #117 read properties first
+        // <1> 解析 <properties /> 标签
       propertiesElement(root.evalNode("properties"));
+        // <2> 解析 <settings /> 标签，检测configuration里有没有对应属性的setter
       Properties settings = settingsAsProperties(root.evalNode("settings"));
+        // <3> 加载自定义 VFS 实现类
       loadCustomVfs(settings);
       loadCustomLogImpl(settings);
+        // <4> 解析 <typeAliases /> 标签
       typeAliasesElement(root.evalNode("typeAliases"));
+        // <5> 解析 <plugins /> 标签
       pluginElement(root.evalNode("plugins"));
+        // <6> 解析 <objectFactory /> 标签
       objectFactoryElement(root.evalNode("objectFactory"));
+        // <7> 解析 <objectWrapperFactory /> 标签
       objectWrapperFactoryElement(root.evalNode("objectWrapperFactory"));
+        // <8> 解析 <reflectorFactory /> 标签
       reflectorFactoryElement(root.evalNode("reflectorFactory"));
+        // <9> 赋值 <settings /> 到 Configuration 属性
       settingsElement(settings);
       // read it after objectFactory and objectWrapperFactory issue #631
+        // <10> 解析 <environments /> 标签
       environmentsElement(root.evalNode("environments"));
+        // <11> 解析 <databaseIdProvider /> 标签
       databaseIdProviderElement(root.evalNode("databaseIdProvider"));
+        // <12> 解析 <typeHandlers /> 标签
       typeHandlerElement(root.evalNode("typeHandlers"));
+        // <13> 解析 <mappers /> 标签
       mapperElement(root.evalNode("mappers"));
     } catch (Exception e) {
       throw new BuilderException("Error parsing SQL Mapper Configuration. Cause: " + e, e);
@@ -123,11 +153,14 @@ public class XMLConfigBuilder extends BaseBuilder {
   }
 
   private Properties settingsAsProperties(XNode context) {
+      // 将子标签，解析成 Properties 对象
     if (context == null) {
       return new Properties();
     }
+    //获取setting的所有属性，如果有变量则会动态替换
     Properties props = context.getChildrenAsProperties();
     // Check that all settings are known to the configuration class
+      // 校验每个属性，在 Configuration 中，有相应的 setting 方法，否则抛出 BuilderException 异常
     MetaClass metaConfig = MetaClass.forClass(Configuration.class, localReflectorFactory);
     for (Object key : props.keySet()) {
       if (!metaConfig.hasSetter(String.valueOf(key))) {
@@ -138,8 +171,10 @@ public class XMLConfigBuilder extends BaseBuilder {
   }
 
   private void loadCustomVfs(Properties props) throws ClassNotFoundException {
+      // 获得 vfsImpl 属性
     String value = props.getProperty("vfsImpl");
     if (value != null) {
+        // 使用 , 作为分隔符，拆成 VFS 类名的数组
       String[] clazzes = value.split(",");
       for (String clazz : clazzes) {
         if (!clazz.isEmpty()) {
@@ -358,25 +393,36 @@ public class XMLConfigBuilder extends BaseBuilder {
 
   private void mapperElement(XNode parent) throws Exception {
     if (parent != null) {
+        // <0> 遍历子节点
       for (XNode child : parent.getChildren()) {
+          // <1> 如果是 package 标签，则扫描该包
         if ("package".equals(child.getName())) {
+            // 获得包名
           String mapperPackage = child.getStringAttribute("name");
+            // 添加到 configuration 中
           configuration.addMappers(mapperPackage);
         } else {
+            // 获得 resource、url、class 属性
           String resource = child.getStringAttribute("resource");
           String url = child.getStringAttribute("url");
           String mapperClass = child.getStringAttribute("class");
+            // <2> 使用相对于类路径的资源引用
           if (resource != null && url == null && mapperClass == null) {
             ErrorContext.instance().resource(resource);
+              // 获得 resource 的 InputStream 对象
             InputStream inputStream = Resources.getResourceAsStream(resource);
+              // 创建 XMLMapperBuilder 对象
             XMLMapperBuilder mapperParser = new XMLMapperBuilder(inputStream, configuration, resource, configuration.getSqlFragments());
+              // 执行解析
             mapperParser.parse();
           } else if (resource == null && url != null && mapperClass == null) {
+              // <3> 使用完全限定资源定位符（URL）
             ErrorContext.instance().resource(url);
             InputStream inputStream = Resources.getUrlAsStream(url);
             XMLMapperBuilder mapperParser = new XMLMapperBuilder(inputStream, configuration, url, configuration.getSqlFragments());
             mapperParser.parse();
           } else if (resource == null && url == null && mapperClass != null) {
+              // <4> 使用映射器接口实现类的完全限定类名
             Class<?> mapperInterface = Resources.classForName(mapperClass);
             configuration.addMapper(mapperInterface);
           } else {

@@ -24,8 +24,13 @@ import java.net.URL;
  * @author Clinton Begin
  */
 public class ClassLoaderWrapper {
-
+    /**
+     * 默认 ClassLoader 对象
+     */
   ClassLoader defaultClassLoader;
+    /**
+     * 系统 ClassLoader 对象
+     */
   ClassLoader systemClassLoader;
 
   ClassLoaderWrapper() {

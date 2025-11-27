@@ -52,14 +52,44 @@ import org.apache.ibatis.io.Resources;
  * @author Kazuki Shimizu
  */
 public final class TypeHandlerRegistry {
-
+    /**
+     * JDBC Type 和 {@link TypeHandler} 的映射
+     *
+     * {@link #register(JdbcType, TypeHandler)}
+     */
   private final Map<JdbcType, TypeHandler<?>> JDBC_TYPE_HANDLER_MAP = new EnumMap<>(JdbcType.class);
+    /**
+     * {@link TypeHandler} 的映射
+     *
+     * KEY1：JDBC Type
+     * KEY2：Java Type
+     * VALUE：{@link TypeHandler} 对象
+     */
   private final Map<Type, Map<JdbcType, TypeHandler<?>>> TYPE_HANDLER_MAP = new ConcurrentHashMap<>();
+    /**
+     * {@link UnknownTypeHandler} 对象
+     */
   private final TypeHandler<Object> UNKNOWN_TYPE_HANDLER = new UnknownTypeHandler(this);
+
+    /**
+     * 所有 TypeHandler 的“集合”
+     *
+     * KEY：{@link TypeHandler#getClass()}
+     * VALUE：{@link TypeHandler} 对象
+     */
   private final Map<Class<?>, TypeHandler<?>> ALL_TYPE_HANDLERS_MAP = new HashMap<>();
 
+    /**
+     * 空 TypeHandler 集合的标识，即使 {@link #TYPE_HANDLER_MAP} 中，某个 KEY1 对应的 Map<JdbcType, TypeHandler<?>> 为空。
+     *
+     * @see #getJdbcHandlerMap(Type)
+     */
   private static final Map<JdbcType, TypeHandler<?>> NULL_TYPE_HANDLER_MAP = Collections.emptyMap();
 
+
+    /**
+     * 默认的枚举类型的 TypeHandler 对象
+     */
   private Class<? extends TypeHandler> defaultEnumTypeHandler = EnumTypeHandler.class;
 
   public TypeHandlerRegistry() {

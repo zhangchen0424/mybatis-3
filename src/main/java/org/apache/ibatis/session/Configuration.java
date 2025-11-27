@@ -98,12 +98,18 @@ import org.apache.ibatis.type.TypeHandlerRegistry;
  * @author Clinton Begin
  */
 public class Configuration {
-
+    /**
+     * DB Environment 对象
+     */
   protected Environment environment;
 
   protected boolean safeRowBoundsEnabled;
   protected boolean safeResultHandlerEnabled = true;
   protected boolean mapUnderscoreToCamelCase;
+
+    /**
+     * 当开启时，任何方法的调用都会加载该对象的所有属性。否则，每个属性会按需加载（参考lazyLoadTriggerMethods)
+     */
   protected boolean aggressiveLazyLoading;
   protected boolean multipleResultSetsEnabled = true;
   protected boolean useGeneratedKeys;
@@ -111,20 +117,43 @@ public class Configuration {
   protected boolean cacheEnabled = true;
   protected boolean callSettersOnNulls;
   protected boolean useActualParamName = true;
+    /**
+     * 是否返回空行对应的对象
+     */
   protected boolean returnInstanceForEmptyRow;
 
   protected String logPrefix;
   protected Class <? extends Log> logImpl;
+
+    /**
+     * VFS 实现类
+     */
   protected Class <? extends VFS> vfsImpl;
+
+    /**
+     * {@link BaseExecutor} 本地缓存范围
+     */
   protected LocalCacheScope localCacheScope = LocalCacheScope.SESSION;
   protected JdbcType jdbcTypeForNull = JdbcType.OTHER;
+
+    /**
+     * 指定哪个对象的方法触发一次延迟加载。
+     */
   protected Set<String> lazyLoadTriggerMethods = new HashSet<>(Arrays.asList("equals", "clone", "hashCode", "toString"));
   protected Integer defaultStatementTimeout;
   protected Integer defaultFetchSize;
   protected ExecutorType defaultExecutorType = ExecutorType.SIMPLE;
+
+    /**
+     * 自动映射行为
+     */
   protected AutoMappingBehavior autoMappingBehavior = AutoMappingBehavior.PARTIAL;
   protected AutoMappingUnknownColumnBehavior autoMappingUnknownColumnBehavior = AutoMappingUnknownColumnBehavior.NONE;
-
+    /**
+     * 变量 Properties 对象。
+     *
+     * 参见 {@link org.apache.ibatis.builder.xml.XMLConfigBuilder#propertiesElement(XNode context)} 方法
+     */
   protected Properties variables = new Properties();
   protected ReflectorFactory reflectorFactory = new DefaultReflectorFactory();
   protected ObjectFactory objectFactory = new DefaultObjectFactory();
@@ -132,7 +161,9 @@ public class Configuration {
 
   protected boolean lazyLoadingEnabled = false;
   protected ProxyFactory proxyFactory = new JavassistProxyFactory(); // #224 Using internal Javassist instead of OGNL
-
+    /**
+     * 数据库标识
+     */
   protected String databaseId;
   /**
    * Configuration factory class.
@@ -143,31 +174,86 @@ public class Configuration {
   protected Class<?> configurationFactory;
 
   protected final MapperRegistry mapperRegistry = new MapperRegistry(this);
+    /**
+     * 拦截器链
+     */
   protected final InterceptorChain interceptorChain = new InterceptorChain();
+    /**
+     * TypeHandlerRegistry 对象
+     */
   protected final TypeHandlerRegistry typeHandlerRegistry = new TypeHandlerRegistry();
+    /**
+     * TypeAliasRegistry 对象
+     */
   protected final TypeAliasRegistry typeAliasRegistry = new TypeAliasRegistry();
+    /**
+     * LanguageDriverRegistry 对象
+     */
   protected final LanguageDriverRegistry languageRegistry = new LanguageDriverRegistry();
-
+    /**
+     * MappedStatement 映射
+     *
+     * KEY：`${namespace}.${id}`
+     */
   protected final Map<String, MappedStatement> mappedStatements = new StrictMap<MappedStatement>("Mapped Statements collection")
       .conflictMessageProducer((savedValue, targetValue) ->
           ". please check " + savedValue.getResource() + " and " + targetValue.getResource());
+    /**
+     * Cache 对象集合
+     *
+     * KEY：命名空间 namespace
+     */
   protected final Map<String, Cache> caches = new StrictMap<>("Caches collection");
+    /**
+     * ResultMap 的映射
+     *
+     * KEY：`${namespace}.${id}`
+     */
   protected final Map<String, ResultMap> resultMaps = new StrictMap<>("Result Maps collection");
   protected final Map<String, ParameterMap> parameterMaps = new StrictMap<>("Parameter Maps collection");
+    /**
+     * KeyGenerator 的映射
+     *
+     * KEY：在 {@link #mappedStatements} 的 KEY 的基础上，跟上 {@link SelectKeyGenerator#SELECT_KEY_SUFFIX}
+     */
   protected final Map<String, KeyGenerator> keyGenerators = new StrictMap<>("Key Generators collection");
-
+    /**
+     * 已加载资源( Resource )集合
+     */
   protected final Set<String> loadedResources = new HashSet<>();
-  protected final Map<String, XNode> sqlFragments = new StrictMap<>("XML fragments parsed from previous mappers");
 
+    /**
+     * 可被其他语句引用的可重用语句块的集合
+     *
+     * 例如：<sql id="userColumns"> ${alias}.id,${alias}.username,${alias}.password </sql>
+     */
+  protected final Map<String, XNode> sqlFragments = new StrictMap<>("XML fragments parsed from previous mappers");
+    /**
+     * 未完成的 XMLStatementBuilder 集合
+     */
   protected final Collection<XMLStatementBuilder> incompleteStatements = new LinkedList<>();
+    /**
+     * 未完成的 CacheRefResolver 集合
+     */
   protected final Collection<CacheRefResolver> incompleteCacheRefs = new LinkedList<>();
+    /**
+     * 未完成的 ResultMapResolver 集合
+     */
   protected final Collection<ResultMapResolver> incompleteResultMaps = new LinkedList<>();
+    /**
+     * 未完成的 MethodResolver 集合
+     */
   protected final Collection<MethodResolver> incompleteMethods = new LinkedList<>();
 
   /*
    * A map holds cache-ref relationship. The key is the namespace that
    * references a cache bound to another namespace and the value is the
    * namespace which the actual cache is bound to.
+   *
+   * Cache 指向的映射
+   *
+   * @see #addCacheRef(String, String)
+   * @see org.apache.ibatis.builder.xml.XMLMapperBuilder#cacheRefElement(XNode)
    */
   protected final Map<String, String> cacheRefMap = new HashMap<>();
 
@@ -177,6 +263,7 @@ public class Configuration {
   }
 
   public Configuration() {
+      // 注册到 typeAliasRegistry 中 begin ~~~~
     typeAliasRegistry.registerAlias("JDBC", JdbcTransactionFactory.class);
     typeAliasRegistry.registerAlias("MANAGED", ManagedTransactionFactory.class);
 

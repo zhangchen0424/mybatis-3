@@ -58,17 +58,20 @@ public class DefaultVFS extends VFS {
 
       // First, try to find the URL of a JAR file containing the requested resource. If a JAR
       // file is found, then we'll list child resources by reading the JAR.
+        // 如果 url 指向的是 Jar Resource ，则返回该 Jar Resource ，否则返回 null
       URL jarUrl = findJarForResource(url);
       if (jarUrl != null) {
         is = jarUrl.openStream();
         if (log.isDebugEnabled()) {
           log.debug("Listing " + url);
         }
+          // 遍历 Jar Resource
         resources = listResources(new JarInputStream(is), path);
       }
       else {
         List<String> children = new ArrayList<>();
         try {
+            // 判断为 JAR URL
           if (isJar(url)) {
             // Some versions of JBoss VFS might give a JAR stream even if the resource
             // referenced by the URL isn't actually a JAR
@@ -94,6 +97,7 @@ public class DefaultVFS extends VFS {
              * the class loader as a child of the current resource. If any line fails
              * then we assume the current resource is not a directory.
              */
+              // 【重点】<1> 获得路径下的所有资源
             is = url.openStream();
             BufferedReader reader = new BufferedReader(new InputStreamReader(is));
             List<String> lines = new ArrayList<>();
@@ -140,15 +144,19 @@ public class DefaultVFS extends VFS {
         }
 
         // The URL prefix to use when recursively listing child resources
+          // 【重点】<2> 计算 prefix
         String prefix = url.toExternalForm();
         if (!prefix.endsWith("/")) {
           prefix = prefix + "/";
         }
 
         // Iterate over immediate children, adding files and recursing into directories
+          // 【重点】 <2> 遍历子路径
         for (String child : children) {
           String resourcePath = path + "/" + child;
+            // 添加到 resources 中
           resources.add(resourcePath);
+            // 递归遍历子路径，并将结果添加到 resources 中
           URL childUrl = new URL(prefix + child);
           resources.addAll(list(childUrl, resourcePath));
         }
@@ -221,7 +229,8 @@ public class DefaultVFS extends VFS {
     if (log.isDebugEnabled()) {
       log.debug("Find JAR URL: " + url);
     }
-
+// 这段代码看起来比较神奇，虽然看起来没有 break 的条件，但是是通过 MalformedURLException 异常进行
+      // 正如上面英文注释，如果 URL 的文件部分本身就是 URL ，那么该 URL 可能指向 JAR
     // If the file part of the URL is itself a URL, then that URL probably points to the JAR
     try {
       for (;;) {
