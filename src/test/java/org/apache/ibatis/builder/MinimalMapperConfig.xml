@@ -21,7 +21,13 @@
     "http://mybatis.org/dtd/mybatis-3-config.dtd">
 
 <configuration>
-
+    <properties>
+        <property name="cpu" value="16c" />
+        <property name="target_sql" value="123" />
+    </properties>
+    <mappers>
+        <mapper resource="org/apache/ibatis/builder/AuthorMapper.xml"/>
+    </mappers>
 
 </configuration>
 

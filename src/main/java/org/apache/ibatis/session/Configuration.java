@@ -715,9 +715,12 @@ public class Configuration {
   }
 
   public void addResultMap(ResultMap rm) {
+      // <1> 添加到 resultMaps 中
     resultMaps.put(rm.getId(), rm);
+      // 若传入的 ResultMap 不存在内嵌 ResultMap 并且有 Discriminator ，则判断是否需要强制标记为有内嵌的 ResultMap
     checkLocallyForDiscriminatedNestedResultMaps(rm);
-    checkGloballyForDiscriminatedNestedResultMaps(rm);
+      // 遍历全局的 ResultMap 集合，若其拥有 Discriminator 对象，则判断是否强制标记为有内嵌的 ResultMap
+      checkGloballyForDiscriminatedNestedResultMaps(rm);
   }
 
   public Collection<String> getResultMapNames() {
@@ -926,12 +929,17 @@ public class Configuration {
 
   // Slow but a one time cost. A better solution is welcome.
   protected void checkGloballyForDiscriminatedNestedResultMaps(ResultMap rm) {
-    if (rm.hasNestedResultMaps()) {
-      for (Map.Entry<String, ResultMap> entry : resultMaps.entrySet()) {
+      // 如果传入的 ResultMap 有内嵌的 ResultMap
+      if (rm.hasNestedResultMaps()) {
+          // 遍历全局的 ResultMap 集合
+          for (Map.Entry<String, ResultMap> entry : resultMaps.entrySet()) {
         Object value = entry.getValue();
         if (value instanceof ResultMap) {
-          ResultMap entryResultMap = (ResultMap) value;
+            // 判断遍历的全局的 entryResultMap 不存在内嵌 ResultMap 并且有 Discriminator
+            ResultMap entryResultMap = (ResultMap) value;
           if (!entryResultMap.hasNestedResultMaps() && entryResultMap.getDiscriminator() != null) {
+              // 判断是否 Discriminator 的 ResultMap 集合中，使用了传入的 ResultMap 。
+              // 如果是，则标记为有内嵌的 ResultMap
             Collection<String> discriminatedResultMapNames = entryResultMap.getDiscriminator().getDiscriminatorMap().values();
             if (discriminatedResultMapNames.contains(rm.getId())) {
               entryResultMap.forceNestedResultMaps();
@@ -944,11 +952,14 @@ public class Configuration {
 
   // Slow but a one time cost. A better solution is welcome.
   protected void checkLocallyForDiscriminatedNestedResultMaps(ResultMap rm) {
+      // 如果传入的 ResultMap 不存在内嵌 ResultMap 并且有 Discriminator
     if (!rm.hasNestedResultMaps() && rm.getDiscriminator() != null) {
+        // 遍历传入的 ResultMap 的 Discriminator 的 ResultMap 集合
       for (Map.Entry<String, String> entry : rm.getDiscriminator().getDiscriminatorMap().entrySet()) {
-        String discriminatedResultMapName = entry.getValue();
+          String discriminatedResultMapName = entry.getValue();
         if (hasResultMap(discriminatedResultMapName)) {
-          ResultMap discriminatedResultMap = resultMaps.get(discriminatedResultMapName);
+            // 如果引用的 ResultMap 存在内嵌 ResultMap ，则标记传入的 ResultMap 存在内嵌 ResultMap
+            ResultMap discriminatedResultMap = resultMaps.get(discriminatedResultMapName);
           if (discriminatedResultMap.hasNestedResultMaps()) {
             rm.forceNestedResultMaps();
             break;

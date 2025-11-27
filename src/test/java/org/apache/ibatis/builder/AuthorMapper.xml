@@ -22,7 +22,7 @@
 
 <mapper namespace="org.apache.ibatis.domain.blog.mappers.AuthorMapper">
     
-    <cache-ref namespace="org.apache.ibatis.builder.CachedAuthorMapper"/>
+    <!--<cache-ref namespace="org.apache.ibatis.builder.CachedAuthorMapper"/>-->
 
 	<parameterMap id="selectAuthor" type="org.apache.ibatis.domain.blog.Author">
 		<parameter property="id" />
@@ -66,7 +66,20 @@
 		</constructor>
 	</resultMap>
 
-	<select id="selectAllAuthors" resultType="org.apache.ibatis.domain.blog.Author">
+    <select id="selectComplexAuthors" resultMap="selectComplexImmutableAuthor">
+        select * from author
+    </select>
+
+    <!--<sql id="userColumns"> ${alias}.id,${alias}.username,${alias}.password </sql>
+
+    <select id="selectUsers" resultType="map">
+        select
+        <include refid="userColumns"><property name="alias" value="t1"/></include>,
+        <include refid="userColumns"><property name="alias" value="t2"/></include>
+        from some_table t1
+        cross join some_table t2
+    </select>-->
+	<!--<select id="selectAllAuthors" resultType="org.apache.ibatis.domain.blog.Author">
 		select * from author
 	</select>
 
@@ -146,5 +159,5 @@
 		select * from author
 	</select>
     <sql id="test1" databaseId="mysql"></sql>
-    <sql id="test1" ></sql>
+    <sql id="test1" ></sql>-->
 </mapper>
