@@ -66,6 +66,15 @@
 		</constructor>
 	</resultMap>
 
+    <select id="findActiveBlogWithTitleLike"
+            resultType="Blog">
+        SELECT * FROM BLOG
+        WHERE state = ‘ACTIVE’
+        <if test="title != null">
+            AND title like #{title}
+        </if>
+    </select>
+
     <select id="selectComplexAuthors" resultMap="selectComplexImmutableAuthor">
         select * from author
     </select>

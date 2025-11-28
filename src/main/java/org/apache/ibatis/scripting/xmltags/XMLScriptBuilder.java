@@ -30,13 +30,26 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 /**
+ * 继承 BaseBuilder 抽象类，XML 动态语句( SQL )构建器，负责将 SQL 解析成 SqlSource 对象
+ *
  * @author Clinton Begin
  */
 public class XMLScriptBuilder extends BaseBuilder {
-
+    /**
+     * 当前 SQL 的 XNode 对象
+     */
   private final XNode context;
+    /**
+     * 是否为动态 SQL
+     */
   private boolean isDynamic;
+    /**
+     * SQL 方法类型
+     */
   private final Class<?> parameterType;
+    /**
+     * NodeNodeHandler 的映射
+     */
   private final Map<String, NodeHandler> nodeHandlerMap = new HashMap<>();
 
   public XMLScriptBuilder(Configuration configuration, XNode context) {
@@ -47,6 +60,7 @@ public class XMLScriptBuilder extends BaseBuilder {
     super(configuration);
     this.context = context;
     this.parameterType = parameterType;
+      // 初始化 nodeHandlerMap 属性
     initNodeHandlerMap();
   }
 
@@ -63,8 +77,13 @@ public class XMLScriptBuilder extends BaseBuilder {
     nodeHandlerMap.put("bind", new BindHandler());
   }
 
+    /**
+     * 负责将 SQL 解析成 SqlSource 对象
+     */
   public SqlSource parseScriptNode() {
+      // <1> 解析 SQL
     MixedSqlNode rootSqlNode = parseDynamicTags(context);
+      // <2> 创建 SqlSource 对象
     SqlSource sqlSource = null;
     if (isDynamic) {
       sqlSource = new DynamicSqlSource(configuration, rootSqlNode);
@@ -74,30 +93,52 @@ public class XMLScriptBuilder extends BaseBuilder {
     return sqlSource;
   }
 
+    /**
+     * 把sql解析成数组结构，确认是否有动态sql
+     * @param node
+     * @return
+     */
   protected MixedSqlNode parseDynamicTags(XNode node) {
+      // <1> 创建 SqlNode 数 【有道云笔记】mybatis SqlNode
+      //https://share.note.youdao.com/s/bOcuJtBg
     List<SqlNode> contents = new ArrayList<>();
     NodeList children = node.getNode().getChildNodes();
+      // <2> 遍历 SQL 节点的所有子节点
     for (int i = 0; i < children.getLength(); i++) {
+        // 当前子节点
       XNode child = node.newXNode(children.item(i));
+        // <2.1> 如果类型是 Node.CDATA_SECTION_NODE 或者 Node.TEXT_NODE 时
       if (child.getNode().getNodeType() == Node.CDATA_SECTION_NODE || child.getNode().getNodeType() == Node.TEXT_NODE) {
+          // <2.1.1> 获得内容
         String data = child.getStringBody("");
+          // <2.1.2> 创建 TextSqlNode 对象
         TextSqlNode textSqlNode = new TextSqlNode(data);
+          // <2.1.2.1> 如果是动态的 TextSqlNode 对象
         if (textSqlNode.isDynamic()) {
+            // 添加到 contents 中
           contents.add(textSqlNode);
+            // 标记为动态 SQL
           isDynamic = true;
         } else {
+            // <2.1.2.2> 如果是非动态的 TextSqlNode 对象
+            // <2.1.2> 创建 StaticTextSqlNode 添加到 contents 中
           contents.add(new StaticTextSqlNode(data));
         }
+          // <2.2> 如果类型是 Node.ELEMENT_NODE
       } else if (child.getNode().getNodeType() == Node.ELEMENT_NODE) { // issue #628
+          // <2.2.1> 根据子节点的标签，获得对应的 NodeHandler 对象
         String nodeName = child.getNode().getNodeName();
         NodeHandler handler = nodeHandlerMap.get(nodeName);
-        if (handler == null) {
+        if (handler == null) {// 获得不到，说明是未知的标签，抛出 BuilderException 异常
           throw new BuilderException("Unknown element <" + nodeName + "> in SQL statement.");
         }
+          // <2.2.2> 执行 NodeHandler 处理
         handler.handleNode(child, contents);
+          // <2.2.3> 标记为动态 SQL
         isDynamic = true;
       }
     }
+      // <3> 创建 MixedSqlNode 对象
     return new MixedSqlNode(contents);
   }
 
