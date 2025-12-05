@@ -59,6 +59,16 @@
       <association property="id" column="id" resultMap="postLiteIdMap"/>
   </resultMap>
 
+    <select id="selectPostIn" resultType="org.apache.ibatis.domain.blog.Post">
+        SELECT *
+        FROM POST P
+        WHERE ID in
+        <foreach item="item" index="index" collection="list"
+                 open="(" close=")" separator=",">
+           #{item}
+        </foreach>
+    </select>
+
   <resultMap id="mutablePostLiteIdMap" type="org.apache.ibatis.domain.blog.PostLiteId">
       <id property="id" column="id"/>
   </resultMap>
@@ -110,15 +120,7 @@
     </where>
   </select>
 
-  <select id="selectPostIn" resultType="org.apache.ibatis.domain.blog.Post">
-    SELECT *
-    FROM POST P
-    WHERE ID in
-    <foreach item="item" index="index" collection="list"
-             open="(" close=")">
-      <if test="index != 0">,</if> #{item}
-    </foreach>
-  </select>
+
 
   <select id="selectOddPostsIn" resultType="org.apache.ibatis.domain.blog.Post">
     SELECT *

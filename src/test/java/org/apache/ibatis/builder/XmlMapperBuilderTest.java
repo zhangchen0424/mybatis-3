@@ -38,7 +38,7 @@ public class XmlMapperBuilderTest {
   @Test
   public void shouldSuccessfullyLoadXMLMapperFile() throws Exception {
     Configuration configuration = new Configuration();
-    String resource = "org/apache/ibatis/builder/AuthorMapper.xml";
+    String resource = "org/apache/ibatis/builder/PostMapper.xml";
     try (InputStream inputStream = Resources.getResourceAsStream(resource)) {
       XMLMapperBuilder builder = new XMLMapperBuilder(inputStream, configuration, resource, configuration.getSqlFragments());
       builder.parse();

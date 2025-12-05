@@ -36,15 +36,30 @@ import org.apache.ibatis.session.RowBounds;
 import org.apache.ibatis.transaction.Transaction;
 
 /**
+ * 批量执行的 Executor 实现类
+ *
  * @author Jeff Butler
  */
 public class BatchExecutor extends BaseExecutor {
 
   public static final int BATCH_UPDATE_RETURN_VALUE = Integer.MIN_VALUE + 1002;
-
+    /**
+     * Statement 数组
+     */
   private final List<Statement> statementList = new ArrayList<>();
+    /**
+     * BatchResult 数组
+     *
+     * 每一个 BatchResult 元素，对应一个 {@link #statementList} 的 Statement 元素
+     */
   private final List<BatchResult> batchResultList = new ArrayList<>();
+    /**
+     * 当前 SQL
+     */
   private String currentSql;
+    /**
+     * 当前 MappedStatement 对象
+     */
   private MappedStatement currentStatement;
 
   public BatchExecutor(Configuration configuration, Transaction transaction) {
@@ -54,18 +69,25 @@ public class BatchExecutor extends BaseExecutor {
   @Override
   public int doUpdate(MappedStatement ms, Object parameterObject) throws SQLException {
     final Configuration configuration = ms.getConfiguration();
+      // <1> 创建 StatementHandler 对象
     final StatementHandler handler = configuration.newStatementHandler(this, ms, parameterObject, RowBounds.DEFAULT, null, null);
     final BoundSql boundSql = handler.getBoundSql();
     final String sql = boundSql.getSql();
     final Statement stmt;
+      // <2> 获取 SQL 语句并检查是否与上次执行的 SQL 和 MappedStatement 相同
+      // 如果相同，则复用之前的 Statement，并应用事务超时设置，同时将参数对象添加到现有的 BatchResult 中
     if (sql.equals(currentSql) && ms.equals(currentStatement)) {
+
       int last = statementList.size() - 1;
       stmt = statementList.get(last);
+      //设置事务超时时间
       applyTransactionTimeout(stmt);
+        // <2.3> 设置 SQL 上的参数，例如 PrepareStatement 对象上的占位符
       handler.parameterize(stmt);//fix Issues 322
+        // <2.4> 获得最后一次的 BatchResult 对象，并添加参数到其中
       BatchResult batchResult = batchResultList.get(last);
       batchResult.addParameterObject(parameterObject);
-    } else {
+    } else {//如果不相同，则创建新的连接和 Statement，设置参数，并创建新的 BatchResult 记录
       Connection connection = getConnection(ms.getStatementLog());
       stmt = handler.prepare(connection, transaction.getTimeout());
       handler.parameterize(stmt);    //fix Issues 322
@@ -74,6 +96,7 @@ public class BatchExecutor extends BaseExecutor {
       statementList.add(stmt);
       batchResultList.add(new BatchResult(ms, sql, parameterObject));
     }
+      // <4> 批处理
     handler.batch(stmt);
     return BATCH_UPDATE_RETURN_VALUE;
   }
@@ -109,16 +132,20 @@ public class BatchExecutor extends BaseExecutor {
 
   @Override
   public List<BatchResult> doFlushStatements(boolean isRollback) throws SQLException {
+      // <1> 如果 isRollback 为 true ，返回空数组
     try {
       List<BatchResult> results = new ArrayList<>();
       if (isRollback) {
         return Collections.emptyList();
       }
+        // <2> 遍历 statementList 和 batchResultList 数组，逐个提交批处理
       for (int i = 0, n = statementList.size(); i < n; i++) {
+          // <2.1> 获得 Statement 和 BatchResult 对象
         Statement stmt = statementList.get(i);
         applyTransactionTimeout(stmt);
         BatchResult batchResult = batchResultList.get(i);
         try {
+            // <2.2> 批量执行
           batchResult.setUpdateCounts(stmt.executeBatch());
           MappedStatement ms = batchResult.getMappedStatement();
           List<Object> parameterObjects = batchResult.getParameterObjects();
