@@ -28,6 +28,9 @@ import org.apache.ibatis.session.Configuration;
 public class DynamicSqlSource implements SqlSource {
 
   private final Configuration configuration;
+    /**
+     * 根 SqlNode 对象
+     */
   private final SqlNode rootSqlNode;
 
   public DynamicSqlSource(Configuration configuration, SqlNode rootSqlNode) {
@@ -35,14 +38,25 @@ public class DynamicSqlSource implements SqlSource {
     this.rootSqlNode = rootSqlNode;
   }
 
+    /**
+     * 适用于使用了 OGNL 表达式，或者使用了 ${} 表达式的 SQL ，所以它是动态的，需要在每次执行 #getBoundSql(Object parameterObject) 方法，根据参数，生成对应的 SQL
+     * @param parameterObject 参数对象
+     * @return
+     */
   @Override
   public BoundSql getBoundSql(Object parameterObject) {
+      // <1> 应用 rootSqlNode 创建 DynamicContext 对象，并执行 DynamicContext#apply(DynamicContext context) 方法，应用 rootSqlNode ，相当于生成动态 SQL
     DynamicContext context = new DynamicContext(configuration, parameterObject);
     rootSqlNode.apply(context);
+      // <2> 创建 SqlSourceBuilder 对象，并执行 SqlSourceBuilder#parse(String originalSql, Class<?> parameterType, Map<String, Object> additionalParameters) 方法，解析出 SqlSource 对象
     SqlSourceBuilder sqlSourceParser = new SqlSourceBuilder(configuration);
     Class<?> parameterType = parameterObject == null ? Object.class : parameterObject.getClass();
+      // <2> 解析出 SqlSource 对象,返回的 SqlSource 对象，类型是 StaticSqlSource 类。
+      //这个过程，会将 #{} 对，转换成对应的 ? 占位符，并获取该占位符对应的 ParameterMapping 对象
     SqlSource sqlSource = sqlSourceParser.parse(context.getSql(), parameterType, context.getBindings());
+      // <3> 获得 BoundSql 对象
     BoundSql boundSql = sqlSource.getBoundSql(parameterObject);
+      // <4> 添加附加参数到 BoundSql 对象中
     for (Map.Entry<String, Object> entry : context.getBindings().entrySet()) {
       boundSql.setAdditionalParameter(entry.getKey(), entry.getValue());
     }

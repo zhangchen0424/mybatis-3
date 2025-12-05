@@ -21,6 +21,7 @@ import java.util.List;
 import org.apache.ibatis.session.Configuration;
 
 /**
+ * 又是同一个套路，万能trim哈哈
  * @author Clinton Begin
  */
 public class SetSqlNode extends TrimSqlNode {
