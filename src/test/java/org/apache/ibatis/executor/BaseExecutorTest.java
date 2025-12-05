@@ -69,7 +69,9 @@ public class BaseExecutorTest extends BaseDataTest {
       MappedStatement insertStatement = ExecutorTestHelper.prepareInsertAuthorMappedStatementWithBeforeAutoKey(config);
       MappedStatement selectStatement = ExecutorTestHelper.prepareSelectOneAuthorMappedStatement(config);
       int rows = executor.update(insertStatement, author);
-      assertTrue(rows > 0 || rows == BatchExecutor.BATCH_UPDATE_RETURN_VALUE);
+        int rows2 = executor.update(insertStatement, author);
+
+        assertTrue(rows > 0 || rows == BatchExecutor.BATCH_UPDATE_RETURN_VALUE);
       if (rows == BatchExecutor.BATCH_UPDATE_RETURN_VALUE) {
         executor.flushStatements();
       }

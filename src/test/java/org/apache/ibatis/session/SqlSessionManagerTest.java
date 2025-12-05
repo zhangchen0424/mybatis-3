@@ -21,10 +21,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.Reader;
+import java.util.ArrayList;
+import java.util.Collections;
 
 import org.apache.ibatis.BaseDataTest;
 import org.apache.ibatis.domain.blog.Author;
 import org.apache.ibatis.domain.blog.mappers.AuthorMapper;
+import org.apache.ibatis.domain.blog.mappers.PostMapper;
 import org.apache.ibatis.exceptions.PersistenceException;
 import org.apache.ibatis.io.Resources;
 import org.junit.jupiter.api.BeforeAll;
@@ -95,5 +98,17 @@ public class SqlSessionManagerTest extends BaseDataTest {
     Author actual = mapper.selectAuthor(502);
     assertNull(actual);
   }
+
+    @Test
+    public void selectin() throws Exception {
+        manager.startManagedSession();
+        PostMapper mapper = manager.getMapper(PostMapper.class);
+        ArrayList<Integer> list = new ArrayList<>();
+        list.add(11);
+        list.add(22);
+        list.add(33);
+        mapper.selectPostIn(list);
+        manager.close();
+    }
 
 }

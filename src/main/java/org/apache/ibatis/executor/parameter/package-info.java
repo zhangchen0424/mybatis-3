@@ -14,6 +14,7 @@
  *    limitations under the License.
  */
 /**
+ * 实现设置 PreparedStatement 的占位符参数
  * Base package for handling parameters.
  */
 package org.apache.ibatis.executor.parameter;

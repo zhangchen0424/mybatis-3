@@ -21,7 +21,8 @@ import org.junit.jupiter.api.Test;
 public class BatchExecutorTest extends BaseExecutorTest {
 
   @Test
-  public void dummy() {
+  public void dummy() throws Exception {
+      super.shouldInsertNewAuthorWithBeforeAutoKey();
   }
 
   @Override

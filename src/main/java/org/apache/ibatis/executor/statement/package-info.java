@@ -14,6 +14,7 @@
  *    limitations under the License.
  */
 /**
+ * 实现向数据库发起 SQL 命令
  * Statement handlers.
  */
 package org.apache.ibatis.executor.statement;
