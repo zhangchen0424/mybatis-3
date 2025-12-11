@@ -106,14 +106,21 @@ public class BatchExecutor extends BaseExecutor {
       throws SQLException {
     Statement stmt = null;
     try {
+        // <1> 刷入批处理语句
       flushStatements();
       Configuration configuration = ms.getConfiguration();
+        // 创建 StatementHandler 对象
       StatementHandler handler = configuration.newStatementHandler(wrapper, ms, parameterObject, rowBounds, resultHandler, boundSql);
+        // 获得 Connection 对象
       Connection connection = getConnection(ms.getStatementLog());
+        // 创建 Statement 或 PrepareStatement 对象
       stmt = handler.prepare(connection, transaction.getTimeout());
+        // 设置 SQL 上的参数，例如 PrepareStatement 对象上的占位符
       handler.parameterize(stmt);
+        // 执行 StatementHandler  ，进行读操作
       return handler.query(stmt, resultHandler);
     } finally {
+        // 关闭 StatementHandler 对象
       closeStatement(stmt);
     }
   }
@@ -174,13 +181,16 @@ public class BatchExecutor extends BaseExecutor {
           }
           throw new BatchExecutorException(message.toString(), e, results, batchResult);
         }
+          // <2.5> 添加到结果集
         results.add(batchResult);
       }
       return results;
     } finally {
+        // <3.1> 关闭 Statement 们
       for (Statement stmt : statementList) {
         closeStatement(stmt);
       }
+        // <3.2> 置空 currentSql、statementList、batchResultList 属性
       currentSql = null;
       statementList.clear();
       batchResultList.clear();

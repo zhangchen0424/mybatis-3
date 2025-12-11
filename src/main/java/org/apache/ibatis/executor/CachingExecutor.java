@@ -39,6 +39,11 @@ import org.apache.ibatis.transaction.Transaction;
 public class CachingExecutor implements Executor {
 
   private final Executor delegate;
+
+    /**
+     * TransactionalCacheManager 对象，支持事务的缓存管理器。因为二级缓存是支持跨 Session 进行共享，此处需要考虑事务，
+     * 那么，必然需要做到事务提交时，才将当前事务中查询时产生的缓存，同步到二级缓存中。这个功能，就通过 TransactionalCacheManager 来实现
+     */
   private final TransactionalCacheManager tcm = new TransactionalCacheManager();
 
   public CachingExecutor(Executor delegate) {
@@ -55,12 +60,15 @@ public class CachingExecutor implements Executor {
   public void close(boolean forceRollback) {
     try {
       //issues #499, #524 and #573
+        //// 如果强制回滚，则回滚 TransactionalCacheManager
       if (forceRollback) {
         tcm.rollback();
+          // 如果强制提交，则提交 TransactionalCacheManager
       } else {
         tcm.commit();
       }
     } finally {
+        // 执行 delegate 对应的方法
       delegate.close(forceRollback);
     }
   }
@@ -78,7 +86,9 @@ public class CachingExecutor implements Executor {
 
   @Override
   public <E> List<E> query(MappedStatement ms, Object parameterObject, RowBounds rowBounds, ResultHandler resultHandler) throws SQLException {
+      // 获得 BoundSql 对象
     BoundSql boundSql = ms.getBoundSql(parameterObject);
+      // 创建 CacheKey 对象
     CacheKey key = createCacheKey(ms, parameterObject, rowBounds, boundSql);
     return query(ms, parameterObject, rowBounds, resultHandler, key, boundSql);
   }
@@ -92,20 +102,28 @@ public class CachingExecutor implements Executor {
   @Override
   public <E> List<E> query(MappedStatement ms, Object parameterObject, RowBounds rowBounds, ResultHandler resultHandler, CacheKey key, BoundSql boundSql)
       throws SQLException {
+      // <1>
     Cache cache = ms.getCache();
     if (cache != null) {
+        // <2.1> 如果需要清空缓存，则进行清空
       flushCacheIfRequired(ms);
       if (ms.isUseCache() && resultHandler == null) {
+          // 暂时忽略，存储过程相关
         ensureNoOutParams(ms, boundSql);
         @SuppressWarnings("unchecked")
+        // <2.3> 从二级缓存中，获取结果
         List<E> list = (List<E>) tcm.getObject(cache, key);
         if (list == null) {
+            // <2.4.1> 如果不存在，则从数据库中查询
           list = delegate.query(ms, parameterObject, rowBounds, resultHandler, key, boundSql);
+            // <2.4.2> 缓存结果到二级缓存中
           tcm.putObject(cache, key, list); // issue #578 and #116
         }
+          // <2.5> 如果存在，则直接返回结果
         return list;
       }
     }
+      // <3> 不使用缓存，则从数据库中查询
     return delegate.query(ms, parameterObject, rowBounds, resultHandler, key, boundSql);
   }
 

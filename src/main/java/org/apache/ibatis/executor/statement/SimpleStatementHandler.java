@@ -47,16 +47,26 @@ public class SimpleStatementHandler extends BaseStatementHandler {
     Object parameterObject = boundSql.getParameterObject();
     KeyGenerator keyGenerator = mappedStatement.getKeyGenerator();
     int rows;
+      // 如果是 Jdbc3KeyGenerator 类型
     if (keyGenerator instanceof Jdbc3KeyGenerator) {
+        // <1.1> 执行写操作
       statement.execute(sql, Statement.RETURN_GENERATED_KEYS);
+        // <1.2> 获得更新数量
       rows = statement.getUpdateCount();
+        // <1.3> 执行 keyGenerator 的后置处理逻辑
       keyGenerator.processAfter(executor, mappedStatement, statement, parameterObject);
+        // 如果是 SelectKeyGenerator 类型
     } else if (keyGenerator instanceof SelectKeyGenerator) {
+        // <2.1> 执行写操作
       statement.execute(sql);
+        // <2.2> 获得更新数量
       rows = statement.getUpdateCount();
+        // <2.3> 执行 keyGenerator 的后置处理逻辑
       keyGenerator.processAfter(executor, mappedStatement, statement, parameterObject);
     } else {
+        // <3.1> 执行写操作
       statement.execute(sql);
+        // <3.2> 获得更新数量
       rows = statement.getUpdateCount();
     }
     return rows;

@@ -53,7 +53,7 @@ public class BaseExecutorTest extends BaseDataTest {
   public BaseExecutorTest() {
     config = new Configuration();
     config.setLazyLoadingEnabled(true);
-    config.setUseGeneratedKeys(false);
+    config.setUseGeneratedKeys(true);
     config.setMultipleResultSetsEnabled(true);
     config.setUseColumnLabel(true);
     config.setDefaultStatementTimeout(5000);
@@ -69,7 +69,7 @@ public class BaseExecutorTest extends BaseDataTest {
       MappedStatement insertStatement = ExecutorTestHelper.prepareInsertAuthorMappedStatementWithBeforeAutoKey(config);
       MappedStatement selectStatement = ExecutorTestHelper.prepareSelectOneAuthorMappedStatement(config);
       int rows = executor.update(insertStatement, author);
-        int rows2 = executor.update(insertStatement, author);
+//        int rows2 = executor.update(insertStatement, author);
 
         assertTrue(rows > 0 || rows == BatchExecutor.BATCH_UPDATE_RETURN_VALUE);
       if (rows == BatchExecutor.BATCH_UPDATE_RETURN_VALUE) {
