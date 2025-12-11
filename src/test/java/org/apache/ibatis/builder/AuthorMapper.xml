@@ -79,7 +79,7 @@
         select * from author
     </select>
 
-    <!--<sql id="userColumns"> ${alias}.id,${alias}.username,${alias}.password </sql>
+    <sql id="userColumns"> ${alias}.id,${alias}.username,${alias}.password </sql>
 
     <select id="selectUsers" resultType="map">
         select
@@ -87,8 +87,8 @@
         <include refid="userColumns"><property name="alias" value="t2"/></include>
         from some_table t1
         cross join some_table t2
-    </select>-->
-	<!--<select id="selectAllAuthors" resultType="org.apache.ibatis.domain.blog.Author">
+    </select>
+	<select id="selectAllAuthors" resultType="org.apache.ibatis.domain.blog.Author">
 		select * from author
 	</select>
 
@@ -132,7 +132,7 @@
 		select * from author where id = #{id}
 	</select>
 
-	<insert id="insertAuthor" parameterType="org.apache.ibatis.domain.blog.Author">
+	<insert id="insertAuthor" parameterType="org.apache.ibatis.domain.blog.Author" useGeneratedKeys="true" keyProperty="id">
 		insert into Author (id,username,password,email,bio)
 		values (#{id},#{username},#{password},#{email},#{bio})
 	</insert>
@@ -168,5 +168,5 @@
 		select * from author
 	</select>
     <sql id="test1" databaseId="mysql"></sql>
-    <sql id="test1" ></sql>-->
+    <sql id="test1" ></sql>
 </mapper>
