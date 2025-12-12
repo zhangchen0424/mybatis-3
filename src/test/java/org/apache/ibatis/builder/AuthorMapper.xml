@@ -75,10 +75,6 @@
         </if>
     </select>
 
-    <select id="selectComplexAuthors" resultMap="selectComplexImmutableAuthor">
-        select * from author
-    </select>
-
     <sql id="userColumns"> ${alias}.id,${alias}.username,${alias}.password </sql>
 
     <select id="selectUsers" resultType="map">

@@ -51,8 +51,19 @@ public class DefaultSqlSession implements SqlSession {
   private final Configuration configuration;
   private final Executor executor;
 
+    /**
+     * 是否自动提交事务
+     */
   private final boolean autoCommit;
+
+    /**
+     * 是否发生数据变更
+     */
   private boolean dirty;
+
+    /**
+     * Cursor 数组
+     */
   private List<Cursor<?>> cursorList;
 
   public DefaultSqlSession(Configuration configuration, Executor executor, boolean autoCommit) {
@@ -96,14 +107,21 @@ public class DefaultSqlSession implements SqlSession {
 
   @Override
   public <K, V> Map<K, V> selectMap(String statement, Object parameter, String mapKey, RowBounds rowBounds) {
+      // <1> 执行查询
     final List<? extends V> list = selectList(statement, parameter, rowBounds);
+      // <2> 创建 DefaultMapResultHandler 对象
     final DefaultMapResultHandler<K, V> mapResultHandler = new DefaultMapResultHandler<>(mapKey,
             configuration.getObjectFactory(), configuration.getObjectWrapperFactory(), configuration.getReflectorFactory());
+      // <3> 创建 DefaultResultContext 对象
     final DefaultResultContext<V> context = new DefaultResultContext<>();
+      // <4> 遍历查询结果
     for (V o : list) {
+        // 设置 DefaultResultContext 中
       context.nextResultObject(o);
+        // 使用 DefaultMapResultHandler 处理结果的当前元素
       mapResultHandler.handleResult(context);
     }
+      // <5> 返回结果
     return mapResultHandler.getMappedResults();
   }
 
@@ -144,7 +162,9 @@ public class DefaultSqlSession implements SqlSession {
   @Override
   public <E> List<E> selectList(String statement, Object parameter, RowBounds rowBounds) {
     try {
+        // <1> 获得 MappedStatement 对象
       MappedStatement ms = configuration.getMappedStatement(statement);
+        // <2> 执行查询
       return executor.query(ms, wrapCollection(parameter), rowBounds, Executor.NO_RESULT_HANDLER);
     } catch (Exception e) {
       throw ExceptionFactory.wrapException("Error querying database.  Cause: " + e, e);

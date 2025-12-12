@@ -822,6 +822,7 @@ public class Configuration {
   }
 
   public MappedStatement getMappedStatement(String id, boolean validateIncompleteStatements) {
+      // 校验，保证所有 MappedStatement 已经构造完毕
     if (validateIncompleteStatements) {
       buildAllStatements();
     }
@@ -877,7 +878,7 @@ public class Configuration {
    * statement validation.
    */
   protected void buildAllStatements() {
-    parsePendingResultMaps();
+    parsePendingResultMaps();// 保证 incompleteResultMaps 被解析完
     if (!incompleteCacheRefs.isEmpty()) {
       synchronized (incompleteCacheRefs) {
         incompleteCacheRefs.removeIf(x -> x.resolveCacheRef() != null);
